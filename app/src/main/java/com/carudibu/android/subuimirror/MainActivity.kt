@@ -1,18 +1,19 @@
 package com.carudibu.android.subuimirror
 
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-
-import android.content.DialogInterface
-
 import android.app.Presentation
+import android.content.Context
+import android.content.DialogInterface
 import android.graphics.Point
 import android.hardware.display.DisplayManager
+import android.os.Bundle
 import android.util.Log
+import android.view.Display
+import android.view.KeyEvent
+import android.view.KeyEvent.ACTION_DOWN
+import android.view.KeyEvent.ACTION_UP
 import android.view.WindowManager.InvalidDisplayException
-import java.lang.Exception
+import androidx.appcompat.app.AppCompatActivity
 import java.lang.reflect.Field
-import android.view.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -48,12 +49,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun getSubDisplay(): Display? {
         val displays: Array<Display> =
-            (getSystemService("display") as DisplayManager).getDisplays("com.samsung.android.hardware.display.category.BUILTIN")
+            (getSystemService(Context.DISPLAY_SERVICE) as DisplayManager).getDisplays("com.samsung.android.hardware.display.category.BUILTIN")
         Log.d("subuimirror", "builtInDisplays size : " + displays.size)
         val display: Display? = if (displays.size > 1) displays[1] else null
-        if (display != null) {
-            display.getRealSize(this.mAttachedLcdSize)
-        }
+        display?.getRealSize(this.mAttachedLcdSize)
         return display
     }
 
@@ -66,7 +65,7 @@ class MainActivity : AppCompatActivity() {
         val attributes = mPresentationDialog!!.window!!.attributes
         try {
             val field: Field = attributes.javaClass.getField("layoutInDisplayCutoutMode")
-            field.setAccessible(true)
+            field.isAccessible = true
             field.setInt(attributes, 1)
             mPresentationDialog!!.window!!.attributes = attributes
         } catch (e: Exception) {
@@ -75,15 +74,15 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    fun connectSubLcd(
+    private fun connectSubLcd(
         dialogInterface: DialogInterface?,
         i: Int,
         keyEvent: KeyEvent
     ): Boolean {
-        if (keyEvent.getAction() === 0) {
+        if (keyEvent.action == ACTION_DOWN) {
             return onKeyDown(i, keyEvent)
         }
-        return if (keyEvent.getAction() === 1) {
+        return if (keyEvent.action == ACTION_UP) {
             onKeyUp(i, keyEvent)
         } else false
     }
